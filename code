@@ -11,6 +11,7 @@ public Program()
     //use the name "Grid Data" as LCD's name
     sensorDisplay = GridTerminalSystem.GetBlockWithName("Grid Data") as IMyTextPanel;
 
+    //make the content of the LCD TEXT_AND_IMAGE
     if (sensorDisplay != null)
     {
         sensorDisplay.ContentType = ContentType.TEXT_AND_IMAGE;
