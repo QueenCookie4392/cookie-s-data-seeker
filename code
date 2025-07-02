@@ -1,0 +1,60 @@
+IMyLargeTurretBase radarTurret;
+IMyTextPanel sensorDisplay;
+
+public Program()
+{
+    Runtime.UpdateFrequency = UpdateFrequency.Update10;
+
+    // Replace "Radar Turret" with the name of your turret
+    radarTurret = GridTerminalSystem.GetBlockWithName("Autocannon Turret") as IMyLargeTurretBase;
+
+    //use the name "Grid Data" as LCD's name
+    sensorDisplay = GridTerminalSystem.GetBlockWithName("Grid Data") as IMyTextPanel;
+
+    if (sensorDisplay != null)
+    {
+        sensorDisplay.ContentType = ContentType.TEXT_AND_IMAGE;
+    }
+}
+public void Main(string argument, UpdateType updateSource)
+{
+    if (radarTurret == null || sensorDisplay == null)
+        return;
+
+    var target = radarTurret.GetTargetedEntity();
+
+    StringBuilder output = new StringBuilder();
+    output.AppendLine("=== Cookie's data seeker ===");
+
+    if (target.IsEmpty())
+    {
+        output.AppendLine("searching.");
+    }
+    else
+    {
+        output.AppendLine(">>> TARGET LOCK <<<");
+        output.AppendLine($"Name: {target.Name}");
+        output.AppendLine($"Type: {target.Type}");
+        output.AppendLine($"Distance: {Vector3D.Distance(target.Position, Me.GetPosition()):0} m");
+        output.AppendLine($"Velocity: {target.Velocity.Length():0} m/s"); 
+        }
+
+     
+        double fakeSizeEstimate = target.BoundingBox.Size.Length();
+        string integrityStatus;
+
+        if (fakeSizeEstimate > 100)
+            integrityStatus = "full";
+        else if (fakeSizeEstimate > 50)
+            integrityStatus = "moderate";
+        else if (fakeSizeEstimate > 20)
+            integrityStatus = "low";
+        else
+            integrityStatus = "locating";
+
+        output.AppendLine("=== integrity status ===");
+        output.AppendLine($"Size Estimate: {fakeSizeEstimate:0} m");
+        output.AppendLine($"estimated integrity type: {integrityStatus}");
+
+    sensorDisplay.WriteText(output.ToString());
+}
