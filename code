@@ -1,3 +1,9 @@
+// ============== CONFIGURATION =================
+// --- Change the names here to match your ship ---
+const string TURRET_NAME = "Autocannon Turret";
+const string LCD_NAME = "Grid Data";
+// =============================================
+
 IMyLargeTurretBase radarTurret;
 IMyTextPanel sensorDisplay;
 
@@ -5,57 +11,75 @@ public Program()
 {
     Runtime.UpdateFrequency = UpdateFrequency.Update10;
 
-    // Replace "Radar Turret" with the name of your turret
-    radarTurret = GridTerminalSystem.GetBlockWithName("Autocannon Turret") as IMyLargeTurretBase;
+    // Find the blocks using the names from the configuration section
+    radarTurret = GridTerminalSystem.GetBlockWithName(TURRET_NAME) as IMyLargeTurretBase;
+    sensorDisplay = GridTerminalSystem.GetBlockWithName(LCD_NAME) as IMyTextPanel;
 
-    //use the name "Grid Data" as LCD's name
-    sensorDisplay = GridTerminalSystem.GetBlockWithName("Grid Data") as IMyTextPanel;
-
-    //make the content of the LCD TEXT_AND_IMAGE
-    if (sensorDisplay != null)
+    // Error checking for setup
+    if (radarTurret == null)
     {
-        sensorDisplay.ContentType = ContentType.TEXT_AND_IMAGE;
+        Echo($"Error: Turret not found.\nCheck name: '{TURRET_NAME}'");
     }
-}
-public void Main(string argument, UpdateType updateSource)
-{
-    if (radarTurret == null || sensorDisplay == null)
-        return;
-
-    var target = radarTurret.GetTargetedEntity();
-
-    StringBuilder output = new StringBuilder();
-    output.AppendLine("=== Cookie's data seeker ===");
-
-    if (target.IsEmpty())
+    if (sensorDisplay == null)
     {
-        output.AppendLine("searching.");
+        Echo($"Error: LCD not found.\nCheck name: '{LCD_NAME}'");
     }
     else
     {
-        output.AppendLine(">>> TARGET LOCK <<<");
+        // Set the LCD to display text
+        sensorDisplay.ContentType = ContentType.TEXT_AND_IMAGE;
+    }
+}
+
+public void Main(string argument, UpdateType updateSource)
+{
+    // Stop running if blocks were not found during setup
+    if (radarTurret == null || sensorDisplay == null)
+        return;
+
+    // Get the currently targeted entity from the turret
+    var target = radarTurret.GetTargetedEntity();
+
+    StringBuilder output = new StringBuilder();
+    output.AppendLine("=== Cookie's Data Seeker ===");
+
+    // Check if the turret has a target
+    if (target.IsEmpty())
+    {
+        output.AppendLine("\nSearching for target...");
+        Echo("Status: Searching");
+    }
+    else
+    {
+        // --- All target-related logic is now safely inside this 'else' block ---
+        
+        output.AppendLine("\n>>> TARGET LOCK <<<");
         output.AppendLine($"Name: {target.Name}");
         output.AppendLine($"Type: {target.Type}");
-        output.AppendLine($"Distance: {Vector3D.Distance(target.Position, Me.GetPosition()):0} m");
-        output.AppendLine($"Velocity: {target.Velocity.Length():0} m/s"); 
-        }
+        output.AppendLine($"Distance: {Vector3D.Distance(target.Position, Me.GetPosition()):N0} m");
+        output.AppendLine($"Velocity: {target.Velocity.Length():N0} m/s");
 
-     
-        double fakeSizeEstimate = target.BoundingBox.Size.Length();
-        string integrityStatus;
+        output.AppendLine("\n=== Size Classification ===");
+        
+        // This is the length of the diagonal of the target's bounding box
+        double signatureSize = target.BoundingBox.Size.Length();
+        string sizeClass;
 
-        if (fakeSizeEstimate > 100)
-            integrityStatus = "full";
-        else if (fakeSizeEstimate > 50)
-            integrityStatus = "moderate";
-        else if (fakeSizeEstimate > 20)
-            integrityStatus = "low";
+        if (signatureSize > 150)
+            sizeClass = "Capital";
+        else if (signatureSize > 75)
+            sizeClass = "Large";
+        else if (signatureSize > 30)
+            sizeClass = "Medium";
         else
-            integrityStatus = "locating";
+            sizeClass = "Small";
+            
+        output.AppendLine($"Signature: {signatureSize:N0} m");
+        output.AppendLine($"Class: {sizeClass}");
 
-        output.AppendLine("=== integrity status ===");
-        output.AppendLine($"Size Estimate: {fakeSizeEstimate:0} m");
-        output.AppendLine($"estimated integrity type: {integrityStatus}");
+        Echo("Status: Target Locked");
+    }
 
+    // Write the completed string to the LCD
     sensorDisplay.WriteText(output.ToString());
 }
